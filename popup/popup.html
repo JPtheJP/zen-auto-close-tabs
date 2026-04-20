@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <h1>Auto Close Tabs</h1>
+
+  <div id="firstRunWarning" class="warning" hidden>
+    <p><strong>First run warning</strong></p>
+    <p id="warningMessage"></p>
+    <div class="warning-buttons">
+      <button id="skipFirstRun">Skip &amp; adjust settings</button>
+      <button id="proceedFirstRun">Close them now</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>
+      <input type="checkbox" id="enabled" checked>
+      Enabled
+    </label>
+  </div>
+
+  <div class="field">
+    <label for="inactivityDays">Close tabs inactive for</label>
+    <div class="input-row">
+      <input type="number" id="inactivityDays" min="1" max="365" step="1" value="7">
+      <span>days</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="scanIntervalMinutes">Check every</label>
+    <div class="input-row">
+      <input type="number" id="scanIntervalMinutes" min="1" max="1440" step="1" value="60">
+      <span>minutes</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>
+      <input type="checkbox" id="protectAudible" checked>
+      Protect tabs playing audio
+    </label>
+  </div>
+
+  <div class="field">
+    <label for="protectDomains">Protected domains <span class="hint">(one per line)</span></label>
+    <textarea id="protectDomains" rows="3" placeholder="example.com&#10;github.com"></textarea>
+  </div>
+
+  <button id="save">Save</button>
+
+  <div id="status" class="status"></div>
+  <div id="preview" class="preview"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
