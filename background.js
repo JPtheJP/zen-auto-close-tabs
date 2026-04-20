@@ -4,7 +4,14 @@ const ALARM_NAME = "scanTabs";
 const FIRST_RUN_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 async function getSettings() {
-  return await browser.storage.local.get(DEFAULTS);
+  const raw = await browser.storage.local.get(DEFAULTS);
+  return {
+    enabled: !!raw.enabled,
+    inactivityDays: Math.min(365, Math.max(1, parseInt(raw.inactivityDays, 10) || 7)),
+    scanIntervalMinutes: Math.min(1440, Math.max(1, parseInt(raw.scanIntervalMinutes, 10) || 60)),
+    protectAudible: !!raw.protectAudible,
+    protectDomains: Array.isArray(raw.protectDomains) ? raw.protectDomains : []
+  };
 }
 
 async function setupAlarm() {
@@ -71,9 +78,10 @@ async function scanAndCloseTabs() {
   }
 }
 
-browser.runtime.onMessage.addListener((message) => {
+browser.runtime.onMessage.addListener((message, sender) => {
+  if (sender.id !== browser.runtime.id) return;
   if (message.action === "scanNow") {
-    scanAndCloseTabs();
+    return scanAndCloseTabs();
   }
 });
 

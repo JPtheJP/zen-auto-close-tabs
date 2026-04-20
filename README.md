@@ -79,3 +79,7 @@ Invalid entries (no dot, invalid characters) are rejected with feedback. Maximum
 
 - Zen Browser or Firefox 128+
 - Manifest V3
+
+## License
+
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
