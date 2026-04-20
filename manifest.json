@@ -1,0 +1,35 @@
+{
+  "manifest_version": 2,
+  "name": "Auto Close Tabs",
+  "version": "1.0.0",
+  "description": "Automatically close inactive tabs after a configurable period of inactivity",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "auto-close-tabs@zen-extension",
+      "strict_min_version": "109.0"
+    }
+  },
+  "permissions": [
+    "tabs",
+    "alarms",
+    "storage"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "browser_action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "48": "icons/icon-48.svg",
+      "96": "icons/icon-96.svg"
+    }
+  },
+  "options_ui": {
+    "page": "popup/popup.html",
+    "open_in_tab": false
+  },
+  "icons": {
+    "48": "icons/icon-48.svg",
+    "96": "icons/icon-96.svg"
+  }
+}
