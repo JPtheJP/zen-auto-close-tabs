@@ -44,7 +44,10 @@ export function matchesProtectedDomain(url, protectedDomains) {
   if (!url || protectedDomains.length === 0) return false;
   try {
     const hostname = new URL(url).hostname;
-    return protectedDomains.some(d => hostname === d || hostname.endsWith("." + d));
+    return protectedDomains.some(raw => {
+      const d = raw.trim().toLowerCase();
+      return d && (hostname === d || hostname.endsWith("." + d));
+    });
   } catch {
     return false;
   }

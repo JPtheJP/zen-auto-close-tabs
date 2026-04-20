@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Auto Close Tabs",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "Automatically close inactive tabs after a configurable period of inactivity",
   "browser_specific_settings": {
     "gecko": {

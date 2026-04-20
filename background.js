@@ -67,9 +67,15 @@ async function scanAndCloseTabs() {
   }
 
   if (tabsToClose.length > 0) {
-    await browser.tabs.remove(tabsToClose).catch(() => {});
+    await browser.tabs.remove(tabsToClose).catch(e => console.warn("tab removal failed:", e));
   }
 }
+
+browser.runtime.onMessage.addListener((message) => {
+  if (message.action === "scanNow") {
+    scanAndCloseTabs();
+  }
+});
 
 browser.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) {

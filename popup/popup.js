@@ -39,8 +39,8 @@ async function saveSettings() {
 
   const settings = {
     enabled: $("enabled").checked,
-    inactivityDays: Math.max(1, parseInt($("inactivityDays").value, 10) || 7),
-    scanIntervalMinutes: Math.max(1, parseInt($("scanIntervalMinutes").value, 10) || 60),
+    inactivityDays: Math.min(365, Math.max(1, parseInt($("inactivityDays").value, 10) || 7)),
+    scanIntervalMinutes: Math.min(1440, Math.max(1, parseInt($("scanIntervalMinutes").value, 10) || 60)),
     protectAudible: $("protectAudible").checked,
     protectDomains: capped
   };
@@ -132,4 +132,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 $("save").addEventListener("click", saveSettings);
 $("skipFirstRun").addEventListener("click", dismissFirstRun);
-$("proceedFirstRun").addEventListener("click", dismissFirstRun);
+
+$("proceedFirstRun").addEventListener("click", async () => {
+  await dismissFirstRun();
+  await browser.runtime.sendMessage({ action: "scanNow" });
+  await updatePreview();
+});
