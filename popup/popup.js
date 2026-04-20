@@ -1,11 +1,6 @@
-const DEFAULTS = {
-  enabled: true,
-  inactivityDays: 7,
-  protectAudible: true,
-  protectDomains: [],
-  scanIntervalMinutes: 60
-};
+import { DEFAULTS, isInternalUrl, matchesProtectedDomain, normalizeDomain } from "../shared.js";
 
+const MAX_DOMAINS = 100;
 const $ = (id) => document.getElementById(id);
 
 async function loadSettings() {
@@ -18,42 +13,52 @@ async function loadSettings() {
 }
 
 async function saveSettings() {
+  const rawLines = $("protectDomains").value.split("\n");
+  const warnings = [];
+
+  const normalized = [];
+  const rejected = [];
+  for (const line of rawLines) {
+    if (!line.trim()) continue;
+    const d = normalizeDomain(line);
+    if (d) {
+      normalized.push(d);
+    } else {
+      rejected.push(line.trim());
+    }
+  }
+
+  if (rejected.length > 0) {
+    warnings.push(`${rejected.length} invalid entr${rejected.length === 1 ? "y" : "ies"} removed: ${rejected.join(", ")}`);
+  }
+
+  const capped = normalized.slice(0, MAX_DOMAINS);
+  if (normalized.length > MAX_DOMAINS) {
+    warnings.push(`Only the first ${MAX_DOMAINS} domains are saved (${normalized.length - MAX_DOMAINS} dropped)`);
+  }
+
   const settings = {
     enabled: $("enabled").checked,
     inactivityDays: Math.max(1, parseInt($("inactivityDays").value, 10) || 7),
     scanIntervalMinutes: Math.max(1, parseInt($("scanIntervalMinutes").value, 10) || 60),
     protectAudible: $("protectAudible").checked,
-    protectDomains: $("protectDomains").value
-      .split("\n")
-      .map(d => d.trim().toLowerCase())
-      .filter(d => d.length > 0)
+    protectDomains: capped
   };
+
   await browser.storage.local.set(settings);
-  $("status").textContent = "Settings saved";
-  setTimeout(() => { $("status").textContent = ""; }, 2000);
-  updatePreview(settings);
-}
+  $("protectDomains").value = capped.join("\n");
 
-function isInternalUrl(url) {
-  if (!url) return true;
-  return url.startsWith("about:") ||
-         url.startsWith("moz-extension:") ||
-         url.startsWith("chrome:") ||
-         url.startsWith("resource:");
-}
-
-function matchesProtectedDomain(url, protectedDomains) {
-  if (!url || protectedDomains.length === 0) return false;
-  try {
-    const hostname = new URL(url).hostname;
-    return protectedDomains.some(domain => {
-      const d = domain.trim().toLowerCase();
-      if (!d) return false;
-      return hostname === d || hostname.endsWith("." + d);
-    });
-  } catch {
-    return false;
+  if (warnings.length > 0) {
+    $("status").textContent = warnings.join(". ");
+    $("status").style.color = "#e6a700";
+    setTimeout(() => { $("status").textContent = ""; $("status").style.color = ""; }, 5000);
+  } else {
+    $("status").textContent = "Settings saved";
+    $("status").style.color = "";
+    setTimeout(() => { $("status").textContent = ""; }, 2000);
   }
+
+  updatePreview(settings);
 }
 
 async function updatePreview(settings) {
@@ -87,8 +92,11 @@ async function updatePreview(settings) {
 }
 
 async function checkFirstRun() {
-  const { firstRunPending } = await browser.storage.local.get({ firstRunPending: false });
-  if (!firstRunPending) return;
+  const { firstRunInstalledAt, firstRunDismissed } = await browser.storage.local.get({
+    firstRunInstalledAt: null,
+    firstRunDismissed: false
+  });
+  if (!firstRunInstalledAt || firstRunDismissed) return;
 
   const settings = await browser.storage.local.get(DEFAULTS);
   const tabs = await browser.tabs.query({});
@@ -110,6 +118,12 @@ async function checkFirstRun() {
   $("firstRunWarning").hidden = false;
 }
 
+async function dismissFirstRun() {
+  await browser.storage.local.set({ firstRunDismissed: true });
+  await browser.storage.local.remove("firstRunInstalledAt");
+  $("firstRunWarning").hidden = true;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await loadSettings();
   await checkFirstRun();
@@ -117,13 +131,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 $("save").addEventListener("click", saveSettings);
-
-$("skipFirstRun").addEventListener("click", async () => {
-  await browser.storage.local.set({ firstRunPending: false });
-  $("firstRunWarning").hidden = true;
-});
-
-$("proceedFirstRun").addEventListener("click", async () => {
-  await browser.storage.local.set({ firstRunPending: false });
-  $("firstRunWarning").hidden = true;
-});
+$("skipFirstRun").addEventListener("click", dismissFirstRun);
+$("proceedFirstRun").addEventListener("click", dismissFirstRun);

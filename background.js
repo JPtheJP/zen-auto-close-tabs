@@ -1,16 +1,10 @@
-const DEFAULTS = {
-  enabled: true,
-  inactivityDays: 7,
-  protectAudible: true,
-  protectDomains: [],
-  scanIntervalMinutes: 60
-};
+import { DEFAULTS, isInternalUrl, matchesProtectedDomain } from "./shared.js";
 
 const ALARM_NAME = "scanTabs";
+const FIRST_RUN_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 async function getSettings() {
-  const result = await browser.storage.local.get(DEFAULTS);
-  return result;
+  return await browser.storage.local.get(DEFAULTS);
 }
 
 async function setupAlarm() {
@@ -22,34 +16,23 @@ async function setupAlarm() {
   });
 }
 
-function isInternalUrl(url) {
-  if (!url) return true;
-  return url.startsWith("about:") ||
-         url.startsWith("moz-extension:") ||
-         url.startsWith("chrome:") ||
-         url.startsWith("resource:");
-}
-
-function matchesProtectedDomain(url, protectedDomains) {
-  if (!url || protectedDomains.length === 0) return false;
-  try {
-    const hostname = new URL(url).hostname;
-    return protectedDomains.some(domain => {
-      const d = domain.trim().toLowerCase();
-      if (!d) return false;
-      return hostname === d || hostname.endsWith("." + d);
-    });
-  } catch {
+async function isFirstRunBlocked() {
+  const { firstRunInstalledAt, firstRunDismissed } = await browser.storage.local.get({
+    firstRunInstalledAt: null,
+    firstRunDismissed: false
+  });
+  if (!firstRunInstalledAt || firstRunDismissed) return false;
+  if (Date.now() - firstRunInstalledAt > FIRST_RUN_EXPIRY_MS) {
+    await browser.storage.local.remove("firstRunInstalledAt");
     return false;
   }
+  return true;
 }
 
 async function scanAndCloseTabs() {
   const settings = await getSettings();
   if (!settings.enabled) return;
-
-  const { firstRunPending } = await browser.storage.local.get({ firstRunPending: false });
-  if (firstRunPending) return;
+  if (await isFirstRunBlocked()) return;
 
   const tabs = await browser.tabs.query({});
   const cutoff = Date.now() - (settings.inactivityDays * 24 * 60 * 60 * 1000);
@@ -84,7 +67,7 @@ async function scanAndCloseTabs() {
   }
 
   if (tabsToClose.length > 0) {
-    await browser.tabs.remove(tabsToClose);
+    await browser.tabs.remove(tabsToClose).catch(() => {});
   }
 }
 
@@ -102,7 +85,7 @@ browser.storage.onChanged.addListener((changes, area) => {
 
 browser.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
-    browser.storage.local.set({ firstRunPending: true });
+    browser.storage.local.set({ firstRunInstalledAt: Date.now() });
   }
   setupAlarm();
 });

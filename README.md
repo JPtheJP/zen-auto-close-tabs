@@ -8,8 +8,8 @@ A browser extension for [Zen Browser](https://zen-browser.app/) (and Firefox) th
 - Configurable scan interval (default: every 60 minutes)
 - Protects pinned tabs, active tabs, and Zen Essentials
 - Optionally protects tabs playing audio
-- Domain whitelist to protect specific sites from being closed
-- First-run warning showing how many tabs would be affected before any are closed
+- Domain whitelist to protect specific sites from being closed (input is normalized and validated)
+- First-run warning showing how many tabs would be affected before any are closed (auto-expires after 24h)
 - Keeps at least one tab open per window
 - Uses the browser's native color theme
 
@@ -53,7 +53,7 @@ Access settings via the extension toolbar icon or through `about:addons` > Auto 
 | Inactivity threshold | 7 days | Close tabs not accessed for this many days |
 | Check interval | 60 minutes | How often to scan for inactive tabs |
 | Protect audible tabs | On | Don't close tabs playing audio |
-| Protected domains | (none) | Domains to never auto-close (one per line) |
+| Protected domains | (none) | Domains to never auto-close (one per line, max 100) |
 
 ## How it works
 
@@ -64,3 +64,18 @@ Tabs that are never explicitly skipped:
 - The active tab in each window
 - The last remaining tab in any window
 - Internal browser pages (`about:`, `moz-extension:`)
+
+## Protected domains
+
+Domains entered in the whitelist are automatically normalized:
+- `https://bank.com/login` → `bank.com`
+- `*.example.com` → `example.com`
+- `.test.org` → `test.org`
+- `bank.com:443` → `bank.com`
+
+Invalid entries (no dot, invalid characters) are rejected with feedback. Maximum 100 entries.
+
+## Requirements
+
+- Zen Browser or Firefox 128+
+- Manifest V3
